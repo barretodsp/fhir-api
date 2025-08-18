@@ -1,0 +1,10 @@
+.git
+.vscode
+logs
+*.log
+# go.sum
+# go.mod
+Dockerfile
+docker-compose
+bin/
+!dist/

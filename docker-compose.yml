@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  nginx-fhir:
+    image: nginx:latest
+    ports:
+      - "8082:8082"
+    volumes:
+     - "./config/nginx:/etc/nginx"
+    networks:
+      - fhir-network
+    depends_on:
+      - api-hca
+      - api-hcb
+  
+  api-hca:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
+    environment:
+      - SERVER_PORT=2501
+      - DB_URI=${DB_URI:-mongodb://mongo-hc:27017}
+      - DB_NAME=${DB_NAME:-fhir_hca}
+      - DB_USER=${DB_USER:-hospital}
+      - DB_PWD=${DB_PWD:-hc123}
+      - JWT_SECRET_KEY=hca_secret_first
+      - JWT_CLIENT_CODE=hca
+      - LOG_LEVEL=info  # Valores válidos= panic, fatal, error, warn, info, debug, trace
+      - LOG_FORMAT=json
+      - LOG_PATH=/app/logs 
+      - LOG_ROTATION_TIME=24h
+      - LOG_MAX_AGE=72h
+    volumes:
+      - "./logs:/app/logs"
+    ports:
+      - "2501:2501"
+    depends_on:
+      - mongo-hc
+    networks:
+      - fhir-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2501/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  
+  api-hcb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: on-failure
+    environment:
+      - SERVER_PORT=2502
+      - DB_URI=${DB_URI:-mongodb://mongo-hc:27017}
+      - DB_NAME=${DB_NAME:-fhir_hcb}
+      - DB_USER=${DB_USER:-hospital}
+      - DB_PWD=${DB_PWD:-hc123}
+      - JWT_SECRET_KEY=hcb_secret_second
+      - JWT_CLIENT_CODE=hcb
+      - LOG_LEVEL=info
+      - LOG_FORMAT=json 
+      - LOG_PATH=/app/logs
+      - LOG_ROTATION_TIME=24h 
+      - LOG_MAX_AGE=72h
+    volumes:
+      - "./logs:/app/logs"
+    ports:
+      - "2502:2502"
+    networks:
+      - fhir-network
+    depends_on:
+      - mongo-hc
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2502/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  mongo-hc:
+    image: mongo:6.0
+    container_name: mongo-hc
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - "./mongo/data:/data/db"
+      - "./mongo/scripts/pre_init.js:/docker-entrypoint-initdb.d/init-mongo.js"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${DB_USER:-hospital}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_PWD:-hc123}
+    networks:
+      - fhir-network
+
+networks:
+  fhir-network:
+    external: true

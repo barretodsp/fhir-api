@@ -1,0 +1,147 @@
+definitions:
+  models.Encounter:
+    properties:
+      class:
+        type: string
+      fhirId:
+        type: string
+      fullUrl:
+        type: string
+      patientId:
+        type: string
+      period:
+        $ref: '#/definitions/models.Period'
+      practitionerId:
+        type: string
+      status:
+        type: string
+    type: object
+  models.EncounterUpdate:
+    properties:
+      status:
+        type: string
+    required:
+    - status
+    type: object
+  models.Patient:
+    properties:
+      birthDate:
+        type: string
+      familyName:
+        type: string
+      fhirId:
+        type: string
+      gender:
+        type: string
+      givenName:
+        type: string
+    type: object
+  models.Period:
+    properties:
+      end:
+        type: string
+      start:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /encounters/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific encounter with optional field filtering
+      parameters:
+      - description: Encounter ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comma-separated list of fields to return (fhirId,fullUrl,status,class,period,practitionerId,patientId)
+        in: query
+        name: fields
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Encounter'
+        "400":
+          description: invalid field specified
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Encounter not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get encounter by ID
+      tags:
+      - Encounters
+  /patients/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Busca paciente pelo ID
+      parameters:
+      - description: ID do paciente
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Patient'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Retorna um paciente
+      tags:
+      - Pacientes
+  /practitioner/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retorna um Practitioner específico, filtrando os campos desejados.
+      parameters:
+      - description: ID do Practitioner
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 'Lista de campos separados por vírgula (ex: fhirId,fullUrl,status)'
+        in: query
+        name: fields
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Erro de validação nos parâmetros
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Practitioner não encontrado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Busca um Practitioner por ID
+      tags:
+      - practitioners
+swagger: "2.0"
